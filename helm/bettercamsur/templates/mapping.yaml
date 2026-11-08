@@ -1,0 +1,14 @@
+{{- if .Values.emissary.enabled }}
+apiVersion: getambassador.io/v3alpha1
+kind: Mapping
+metadata:
+  name: {{ include "bettercamsur.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "bettercamsur.labels" . | nindent 4 }}
+spec:
+  hostname: {{ .Values.emissary.hostname | quote }}
+  prefix: {{ .Values.emissary.prefix | quote }}
+  service: {{ printf "%s.%s.svc.cluster.local:%v" (include "bettercamsur.fullname" .) .Release.Namespace .Values.emissary.servicePort | quote }}
+  timeout_ms: {{ .Values.emissary.timeoutMs }}
+{{- end }}

@@ -1,28 +1,30 @@
-# Example values for the homelab Kubernetes cluster.
-# Replace image.repository and gateway.parentRefs with your actual GHCR owner
-# and installed Gateway API Gateway resource.
+# Homelab values: Emissary Ingress + Cloudflare Tunnel.
+# PostgreSQL and Redis are separate Bitnami Helm releases in this namespace.
 replicaCount: 2
 
 image:
-  repository: ghcr.io/REPLACE_GITHUB_OWNER/bettercamsur
-  tag: latest
+  repository: ghcr.io/phlopentechcommunity/bettercamsur
+  tag: "sha-7652c0c"
   pullPolicy: IfNotPresent
 
 service:
   type: ClusterIP
   port: 3000
 
+# Do not enable Gateway API: this cluster has no GatewayClass/Gateway.
 gateway:
-  enabled: true
-  parentRefs:
-    - name: cilium-gateway
-      namespace: kube-system
-      sectionName: https
-  hostnames:
-    - bettercamsur.ph
+  enabled: false
 
+# Use the Emissary Mapping CRD rather than a generic Ingress resource.
 ingress:
   enabled: false
+
+emissary:
+  enabled: true
+  hostname: bettercamsur.ph
+  prefix: /
+  servicePort: 3000
+  timeoutMs: 30000
 
 existingSecret: bettercamsur-runtime
 
@@ -39,7 +41,7 @@ env:
   S3_REGION: us-east-1
   S3_BUCKET: bettercamsur-evidence
   S3_FORCE_PATH_STYLE: "true"
-  SMTP_HOST: smtp.example.net
+  SMTP_HOST: REPLACE_WITH_YOUR_SMTP_HOST
   SMTP_PORT: "587"
   SMTP_SECURE: "false"
   SMTP_FROM: "bettercamsur.ph <notifications@bettercamsur.ph>"

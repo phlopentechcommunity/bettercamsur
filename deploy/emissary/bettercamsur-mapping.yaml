@@ -1,0 +1,10 @@
+apiVersion: getambassador.io/v3alpha1
+kind: Mapping
+metadata:
+  name: bettercamsur
+  namespace: bettercamsur
+spec:
+  hostname: bettercamsur.ph
+  prefix: /
+  service: bettercamsur-bettercamsur.bettercamsur.svc.cluster.local:3000
+  timeout_ms: 30000

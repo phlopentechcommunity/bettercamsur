@@ -76,3 +76,11 @@ env:
   SMTP_FROM: "bettercamsur.ph <notifications@bettercamsur.ph>"
   PG_POOL_MAX: "15"
   PG_SSL: "false"
+
+# Emissary Ingress Mapping (getambassador.io/v3alpha1).
+emissary:
+  enabled: false
+  hostname: bettercamsur.ph
+  prefix: /
+  servicePort: 3000
+  timeoutMs: 30000

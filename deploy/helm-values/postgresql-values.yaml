@@ -1,0 +1,28 @@
+architecture: standalone
+
+auth:
+  enablePostgresUser: true
+  username: bettercamsur
+  database: bettercamsur
+  existingSecret: bettercamsur-postgresql
+  secretKeys:
+    adminPasswordKey: postgres-password
+    userPasswordKey: password
+
+primary:
+  persistence:
+    enabled: true
+    storageClass: ceph-rbd-infra-k8s
+    accessModes:
+      - ReadWriteOnce
+    size: 20Gi
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: "2"
+      memory: 2Gi
+
+metrics:
+  enabled: false

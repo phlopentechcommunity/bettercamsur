@@ -285,3 +285,55 @@ If pods fail:
 - `503` from the Gateway: verify the Service endpoints and that the pods pass readiness checks.
 
 The container currently runs SQL migrations before starting Next.js. The migration runner uses a PostgreSQL advisory lock and migration history table to serialize concurrent starts during multi-replica rollout. Test migrations against a PostgreSQL backup or staging database before production upgrades.
+
+
+## Deployment for the existing homelab cluster
+
+For the cluster using MetalLB, Emissary Ingress, ExternalDNS, cert-manager, trust-manager, and Cloudflare Tunnel, follow [`deploy/KUBERNETES-HOMELAB.md`](deploy/KUBERNETES-HOMELAB.md). The application chart uses an Emissary Mapping and ClusterIP Service; it does not create an HTTPRoute or a separate MetalLB Service. PostgreSQL and Redis are separate Bitnami Helm releases in namespace `bettercamsur`.
+
+
+## Deploy the currently published phlopentechcommunity artifacts
+
+The GitHub repository is `phlopentechcommunity/bettercamsur`. Its CI naming convention publishes:
+- Application container image: `ghcr.io/phlopentechcommunity/bettercamsur:sha-<7-character-commit>`
+- Helm OCI chart: `oci://ghcr.io/phlopentechcommunity/charts/bettercamsur` with a chart version such as `0.1.0-sha.<7-character-commit>`.
+
+For the artifact version supplied by the project owner, use chart `0.1.0-sha.7652c0c` and image tag `sha-7652c0c`. The `charts/bettercamsur` artifact is a Helm chart, not the application container image; use `helm pull`, not `docker pull`, to download it.
+
+```bash
+helm pull oci://ghcr.io/phlopentechcommunity/charts/bettercamsur \
+  --version 0.1.0-sha.7652c0c
+
+helm upgrade --install bettercamsur \
+  oci://ghcr.io/phlopentechcommunity/charts/bettercamsur \
+  --version 0.1.0-sha.7652c0c \
+  --namespace bettercamsur --create-namespace \
+  --values helm/bettercamsur/values-homelab.yaml \
+  --set image.repository=ghcr.io/phlopentechcommunity/bettercamsur \
+  --set image.tag=sha-7652c0c
+```
+
+The current published chart snapshot in GitHub does not contain an Emissary Mapping template. Apply the standalone Mapping in `deploy/emissary/bettercamsur-mapping.yaml` after the Helm release creates its Service:
+
+```bash
+kubectl apply -f deploy/emissary/bettercamsur-mapping.yaml
+```
+
+Check the Mapping CRD first:
+
+```bash
+kubectl get crd mappings.getambassador.io
+```
+
+This Mapping expects the Helm release name and chart name both to be `bettercamsur`, resulting in Service `bettercamsur-bettercamsur` in namespace `bettercamsur`. If a different release name is used, update the Mapping service FQDN to match `helm get manifest bettercamsur -n bettercamsur` / `kubectl get svc -n bettercamsur`.
+
+
+## Public report detail, legends, and legal pages
+
+- Public report detail pages are available at `/reports/{reference}`. The older `/track/{reference}` path remains supported and uses the same detail view.
+- Public report detail displays report reference, category, severity, status, department, location, submitted/updated dates, related-problem group references, and evidence links when available.
+- The report detail page includes a status-progress legend and a severity guide. Severity is indicative only; it is not an emergency dispatch or response-time commitment.
+- The home page links recent reports to their public detail page and displays a compact map legend.
+- Original platform-specific policy drafts are available at `/privacy` and `/terms`. The report form requires acknowledgment of the Terms of Use and Privacy Notice.
+- Before production, replace the bracketed controller / privacy contact placeholders in the Privacy Notice and operator placeholders in the Terms. Have the actual Personal Information Controller and Data Protection Officer review and approve the text. Do not publish until the controller identity, purposes, recipients, lawful bases, retention schedule, and privacy contact are confirmed.
+- The policy wording is written for this application's known data flows and is not copied from third-party sites. It references the Philippine National Privacy Commission's official Data Privacy Act and data subject rights resources.

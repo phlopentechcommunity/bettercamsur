@@ -1,0 +1,30 @@
+architecture: standalone
+
+auth:
+  enabled: true
+  existingSecret: bettercamsur-redis
+  existingSecretPasswordKey: redis-password
+
+master:
+  persistence:
+    enabled: true
+    storageClass: ceph-rbd-infra-k8s
+    accessModes:
+      - ReadWriteOnce
+    size: 8Gi
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+
+replica:
+  replicaCount: 0
+
+sentinel:
+  enabled: false
+
+metrics:
+  enabled: false

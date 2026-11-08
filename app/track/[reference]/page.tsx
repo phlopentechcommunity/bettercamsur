@@ -1,9 +1,12 @@
-'use client';
-import { useEffect, useState } from 'react';
 import Link from 'next/link';
-type Item={reference:string;title:string;category:string;status:string;priority:string;severity:string;problems:{reference:string;title:string;status:string}[];address:string|null;department:{name:string}|null;createdAt:string;updatedAt:string;evidence:{url:string;fileName:string}[]};
-export default function TrackReport({params}:{params:Promise<{reference:string}>}){
- const [reference,setReference]=useState(''),[item,setItem]=useState<Item|null>(null),[error,setError]=useState('');
- useEffect(()=>{params.then(p=>{setReference(p.reference);fetch(`/api/track/${encodeURIComponent(p.reference)}`).then(async r=>{const d=await r.json();if(!r.ok)throw new Error(d.error);setItem(d)}).catch(e=>setError(e.message))})},[params]);
- return <main className="app-shell min-vh-100"><header className="topbar"><div className="container"><Link href="/" className="text-decoration-none text-dark fw-bold">bettercamsur.ph</Link></div></header><div className="container py-5" style={{maxWidth:760}}><Link href="/track" className="small text-success text-decoration-none">← Track another report</Link><h1 className="h2 fw-bold mt-3">Report status</h1>{error?<div className="notice error-notice">{error}</div>:!item?<p className="muted">Loading {reference}…</p>:<section className="panel p-4 mt-3"><div className="d-flex justify-content-between gap-3"><div><div className="section-sub">{item.reference}</div><h2 className="h4 mt-1">{item.title}</h2></div><span className={`status-pill status-${item.status}`}>{item.status.replaceAll('_',' ')}</span></div><p className="muted">{item.category} · Severity: {item.severity||item.priority}</p>{item.problems?.length>0&&<div className="notice mb-3"><strong>Related problem group</strong>{item.problems.map(p=><div key={p.reference}>{p.reference} — {p.title} ({p.status})</div>)}</div>}<hr/><dl className="row"><dt className="col-sm-4">Assigned department</dt><dd className="col-sm-8">{item.department?.name||'Awaiting assignment'}</dd><dt className="col-sm-4">Location</dt><dd className="col-sm-8">{item.address||'Map location recorded'}</dd><dt className="col-sm-4">Submitted</dt><dd className="col-sm-8">{new Date(item.createdAt).toLocaleString()}</dd><dt className="col-sm-4">Last updated</dt><dd className="col-sm-8">{new Date(item.updatedAt).toLocaleString()}</dd></dl>{item.evidence.length>0&&<><hr/><h3 className="h6">Photographic evidence</h3><div className="d-flex flex-wrap gap-2">{item.evidence.map(x=><a key={x.url} href={x.url} target="_blank" rel="noreferrer">{x.fileName}</a>)}</div></>}</section>}</div></main>
+import PublicReportDetails from '@/components/PublicReportDetails';
+
+export default async function TrackReportPage({ params }: { params: Promise<{ reference: string }> }) {
+  const { reference } = await params;
+  return <main className="app-shell min-vh-100">
+    <header className="topbar"><div className="container"><Link href="/" className="text-decoration-none text-dark fw-bold">bettercamsur.ph</Link></div></header>
+    <div className="container py-4" style={{maxWidth: 850}}>
+      <PublicReportDetails reference={reference} />
+    </div>
+  </main>;
 }
