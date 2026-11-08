@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "bettercamsur.fullname" . }}
+  labels: {{- include "bettercamsur.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "bettercamsur.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "bettercamsur.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+      {{- with .Values.podAnnotations }}
+      annotations: {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      serviceAccountName: {{ include "bettercamsur.fullname" . }}
+      securityContext: {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- with .Values.imagePullSecrets }}imagePullSecrets: {{- toYaml . | nindent 8 }}{{- end }}
+      containers:
+        - name: web
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+          env:
+            {{- range $key, $value := .Values.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+            - name: DATABASE_URL
+              valueFrom: {secretKeyRef: {name: {{ .Values.existingSecret }}, key: DATABASE_URL}}
+            - name: REDIS_URL
+              valueFrom: {secretKeyRef: {name: {{ .Values.existingSecret }}, key: REDIS_URL}}
+            - name: KEYCLOAK_ADMIN_CLIENT_SECRET
+              valueFrom: {secretKeyRef: {name: {{ .Values.existingSecret }}, key: KEYCLOAK_ADMIN_CLIENT_SECRET}}
+            - name: S3_ACCESS_KEY
+              valueFrom: {secretKeyRef: {name: {{ .Values.existingSecret }}, key: S3_ACCESS_KEY}}
+            - name: S3_SECRET_KEY
+              valueFrom: {secretKeyRef: {name: {{ .Values.existingSecret }}, key: S3_SECRET_KEY}}
+            - name: SMTP_USER
+              valueFrom: {secretKeyRef: {name: {{ .Values.existingSecret }}, key: SMTP_USER}}
+            - name: SMTP_PASSWORD
+              valueFrom: {secretKeyRef: {name: {{ .Values.existingSecret }}, key: SMTP_PASSWORD}}
+          readinessProbe:
+            httpGet: {path: /, port: http}
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: {path: /, port: http}
+            initialDelaySeconds: 30
+            periodSeconds: 20
+          resources: {{- toYaml .Values.resources | nindent 12 }}
+          securityContext: {{- toYaml .Values.securityContext | nindent 12 }}

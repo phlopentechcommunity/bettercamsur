@@ -1,0 +1,5 @@
+import { NextResponse } from 'next/server';
+import { query } from '@/lib/db';
+import { getCached,setCached } from '@/lib/redis';
+export const runtime='nodejs';
+export async function GET(){const cached=await getCached<unknown>('analytics:summary');if(cached)return NextResponse.json(cached);try{const [categories,departments,statuses,hotspots]=await Promise.all([query('SELECT category AS name,count(*)::int AS count FROM reports GROUP BY category ORDER BY count DESC'),query('SELECT COALESCE(d.name,\'Unassigned\') AS name,count(*)::int AS count FROM reports r LEFT JOIN departments d ON d.id=r.department_id GROUP BY d.name ORDER BY count DESC'),query('SELECT status AS name,count(*)::int AS count FROM reports GROUP BY status'),query(`SELECT latitude,longitude,category,title FROM reports WHERE created_at >= now()-interval '30 days' ORDER BY created_at DESC LIMIT 1000`)]);const data={categories:categories.rows,departments:departments.rows,statuses:statuses.rows,hotspots:hotspots.rows};await setCached('analytics:summary',data,60);return NextResponse.json(data);}catch{return NextResponse.json({error:'Analytics unavailable'},{status:503});}}

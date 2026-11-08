@@ -1,0 +1,62 @@
+# Example values for the homelab Kubernetes cluster.
+# Replace image.repository and gateway.parentRefs with your actual GHCR owner
+# and installed Gateway API Gateway resource.
+replicaCount: 2
+
+image:
+  repository: ghcr.io/REPLACE_GITHUB_OWNER/bettercamsur
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 3000
+
+gateway:
+  enabled: true
+  parentRefs:
+    - name: cilium-gateway
+      namespace: kube-system
+      sectionName: https
+  hostnames:
+    - bettercamsur.ph
+
+ingress:
+  enabled: false
+
+existingSecret: bettercamsur-runtime
+
+env:
+  APP_BASE_URL: https://bettercamsur.ph
+  NODE_ENV: production
+  PORT: "3000"
+  KEYCLOAK_URL: https://sso.mitaka.quest
+  KEYCLOAK_REALM: bettercamsur
+  KEYCLOAK_CLIENT_ID: bettercamsur-web
+  KEYCLOAK_ADMIN_CLIENT_ID: bettercamsur-provisioner
+  S3_ENDPOINT: https://s3.mitaka.quest
+  S3_PUBLIC_URL: https://evidence.bettercamsur.ph
+  S3_REGION: us-east-1
+  S3_BUCKET: bettercamsur-evidence
+  S3_FORCE_PATH_STYLE: "true"
+  SMTP_HOST: smtp.example.net
+  SMTP_PORT: "587"
+  SMTP_SECURE: "false"
+  SMTP_FROM: "bettercamsur.ph <notifications@bettercamsur.ph>"
+  PG_POOL_MAX: "15"
+  PG_SSL: "false"
+
+resources:
+  requests:
+    cpu: 200m
+    memory: 256Mi
+  limits:
+    cpu: "2"
+    memory: 1Gi
+
+autoscaling:
+  enabled: false
+
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1

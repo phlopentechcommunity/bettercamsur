@@ -1,0 +1,5 @@
+import pg from 'pg';
+import { readFile,readdir } from 'node:fs/promises';
+import path from 'node:path';
+const pool=new pg.Pool({connectionString:process.env.DATABASE_URL,ssl:process.env.PG_SSL==='true'?{rejectUnauthorized:process.env.PG_SSL_REJECT_UNAUTHORIZED!=='false'}:undefined});
+try{const c=await pool.connect();try{await c.query('SELECT pg_advisory_lock(781239410)');await c.query('CREATE TABLE IF NOT EXISTS schema_migrations(name text PRIMARY KEY,applied_at timestamptz NOT NULL DEFAULT now())');const dir=path.join(process.cwd(),'db/migrations');for(const name of (await readdir(dir)).filter(x=>/^\d+_.*\.sql$/.test(x)).sort()){if((await c.query('SELECT 1 FROM schema_migrations WHERE name=$1',[name])).rowCount)continue;const sql=await readFile(path.join(dir,name),'utf8');try{await c.query('BEGIN');await c.query(sql);await c.query('INSERT INTO schema_migrations(name) VALUES($1)',[name]);await c.query('COMMIT');console.log('Applied '+name);}catch(e){await c.query('ROLLBACK');throw e;}}}finally{await c.query('SELECT pg_advisory_unlock(781239410)');c.release();}}finally{await pool.end();}
